@@ -2,7 +2,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three-Line Chart</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1"></script>
@@ -47,12 +48,26 @@
         .chart-container {
             position: relative;
             width: 100%;
-            height: 50vh; /* Use viewport height for flexibility */
-            min-height: 300px; /* Minimum height for small screens */
+            height: auto; /* Let content determine height */
+            min-height: 250px; /* Minimum height for visibility */
         }
         canvas {
             width: 100% !important;
-            height: 100% !important;
+            height: auto !important;
+            max-height: 80vh; /* Cap height for larger screens */
+        }
+        @media (max-width: 600px) {
+            .filter-buttons, .date-range {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            button, input[type="date"] {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .chart-container {
+                min-height: 200px; /* Smaller minimum for mobile */
+            }
         }
     </style>
 </head>
@@ -89,171 +104,176 @@
         let customDateFrom = null;
         let customDateTo = null;
 
-        // Set initial date picker values
         document.getElementById('dateFrom').value = new Date(minDate).toISOString().split('T')[0];
         document.getElementById('dateTo').value = new Date(maxDate).toISOString().split('T')[0];
 
-        try {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            const chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: originalLabels,
-                    datasets: [
-                        { 
-                            label: 'Act', 
-                            data: originalData1, 
-                            borderColor: '#007bff',
-                            borderWidth: 2.4,
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1,
-                            z: 3
-                        },
-                        { 
-                            label: 'Forecast1', 
-                            data: originalData2, 
-                            borderColor: '#ff8c00',
-                            borderWidth: 2.4,
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1,
-                            z: 2
-                        },
-                        { 
-                            label: 'Forecast2', 
-                            data: originalData3, 
-                            borderColor: '#00cc00',
-                            borderWidth: 2.4,
-                            pointRadius: 0,
-                            fill: false,
-                            tension: 0.1,
-                            z: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false, // Allow chart to stretch
-                    animation: false,
-                    interaction: {
-                        mode: 'nearest',
-                        intersect: false,
-                        axis: 'x'
+        window.onload = function() {
+            setTimeout(initChart, 100); // Slight delay for mobile rendering
+        };
+
+        function initChart() {
+            try {
+                const ctx = document.getElementById('myChart').getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: originalLabels,
+                        datasets: [
+                            { 
+                                label: 'Act', 
+                                data: originalData1, 
+                                borderColor: '#007bff',
+                                borderWidth: 2.4,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.1,
+                                z: 3
+                            },
+                            { 
+                                label: 'Forecast1', 
+                                data: originalData2, 
+                                borderColor: '#ff8c00',
+                                borderWidth: 2.4,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.1,
+                                z: 2
+                            },
+                            { 
+                                label: 'Forecast2', 
+                                data: originalData3, 
+                                borderColor: '#00cc00',
+                                borderWidth: 2.4,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.1,
+                                z: 1
+                            }
+                        ]
                     },
-                    plugins: {
-                        tooltip: {
-                            enabled: true,
-                            position: 'nearest',
-                            callbacks: {
-                                title: function(tooltipItems) {
-                                    return moment(tooltipItems[0].label).format('MMM D, YYYY HH:mm');
-                                },
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        interaction: {
+                            mode: 'nearest',
+                            intersect: false,
+                            axis: 'x'
+                        },
+                        plugins: {
+                            tooltip: {
+                                enabled: true,
+                                position: 'nearest',
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return moment(tooltipItems[0].label).format('MMM D, YYYY HH:mm');
+                                    },
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += context.parsed.y;
+                                        return label;
                                     }
-                                    label += context.parsed.y;
-                                    return label;
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                title: { display: true, text: 'Values' },
+                                grid: { 
+                                    color: '#cccccc',
+                                    drawOnChartArea: true
+                                }
+                            },
+                            x: { 
+                                type: 'time',
+                                time: { 
+                                    unit: 'hour',
+                                    displayFormats: { hour: 'MMM D, HH:mm' }
+                                },
+                                title: { display: true, text: 'Date/Time' },
+                                grid: { 
+                                    display: false
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        y: { 
-                            beginAtZero: true,
-                            title: { display: true, text: 'Values' },
-                            grid: { 
-                                color: '#cccccc',
-                                drawOnChartArea: true
-                            }
-                        },
-                        x: { 
-                            type: 'time',
-                            time: { 
-                                unit: 'hour',
-                                displayFormats: { hour: 'MMM D, HH:mm' }
-                            },
-                            title: { display: true, text: 'Date/Time' },
-                            grid: { 
-                                display: false
-                            }
-                        }
                     }
-                }
-            });
+                });
 
-            function filterData(period) {
-                currentFilter = period;
-                customDateFrom = null;
-                customDateTo = null;
-                updateChart();
-            }
-
-            function updateDateRange() {
-                const fromInput = document.getElementById('dateFrom').value;
-                const toInput = document.getElementById('dateTo').value;
-                
-                if (fromInput && toInput) {
-                    customDateFrom = new Date(fromInput + 'T00:00:00');
-                    customDateTo = new Date(toInput + 'T23:00:00');
-                    currentFilter = 'custom';
+                function filterData(period) {
+                    currentFilter = period;
+                    customDateFrom = null;
+                    customDateTo = null;
                     updateChart();
                 }
-            }
 
-            function updateChart() {
-                let filteredLabels = [...originalLabels];
-                let filteredData1 = [...originalData1];
-                let filteredData2 = [...originalData2];
-                let filteredData3 = [...originalData3];
-
-                if (currentFilter === 'custom' && customDateFrom && customDateTo) {
-                    const filteredIndices = dates.map((date, index) => 
-                        date >= customDateFrom && date <= customDateTo ? index : -1
-                    ).filter(index => index !== -1);
-
-                    filteredLabels = filteredIndices.map(i => originalLabels[i]);
-                    filteredData1 = filteredIndices.map(i => originalData1[i]);
-                    filteredData2 = filteredIndices.map(i => originalData2[i]);
-                    filteredData3 = filteredIndices.map(i => originalData3[i]);
-                } else if (currentFilter !== 'all') {
-                    let cutoffDate;
-                    switch(currentFilter) {
-                        case '30days':
-                            cutoffDate = new Date(maxDate - 30 * 24 * 60 * 60 * 1000);
-                            break;
-                        case '7days':
-                            cutoffDate = new Date(maxDate - 7 * 24 * 60 * 60 * 1000);
-                            break;
-                        case '24hours':
-                            cutoffDate = new Date(maxDate - 24 * 60 * 60 * 1000);
-                            break;
+                function updateDateRange() {
+                    const fromInput = document.getElementById('dateFrom').value;
+                    const toInput = document.getElementById('dateTo').value;
+                    
+                    if (fromInput && toInput) {
+                        customDateFrom = new Date(fromInput + 'T00:00:00');
+                        customDateTo = new Date(toInput + 'T23:00:00');
+                        currentFilter = 'custom';
+                        updateChart();
                     }
-                    const filteredIndices = dates.map((date, index) => 
-                        date >= cutoffDate ? index : -1
-                    ).filter(index => index !== -1);
-
-                    filteredLabels = filteredIndices.map(i => originalLabels[i]);
-                    filteredData1 = filteredIndices.map(i => originalData1[i]);
-                    filteredData2 = filteredIndices.map(i => originalData2[i]);
-                    filteredData3 = filteredIndices.map(i => originalData3[i]);
                 }
 
-                chart.data.labels = filteredLabels;
-                chart.data.datasets[0].data = filteredData1;
-                chart.data.datasets[1].data = filteredData2;
-                chart.data.datasets[2].data = filteredData3;
-                chart.update('none');
-            }
+                function updateChart() {
+                    let filteredLabels = [...originalLabels];
+                    let filteredData1 = [...originalData1];
+                    let filteredData2 = [...originalData2];
+                    let filteredData3 = [...originalData3];
 
-            // Initial render - show all data
-            currentFilter = 'all';
-            updateChart();
-        } catch (error) {
-            document.getElementById('error').innerText = 'Error rendering chart: ' + error.message;
-            console.error(error);
+                    if (currentFilter === 'custom' && customDateFrom && customDateTo) {
+                        const filteredIndices = dates.map((date, index) => 
+                            date >= customDateFrom && date <= customDateTo ? index : -1
+                        ).filter(index => index !== -1);
+
+                        filteredLabels = filteredIndices.map(i => originalLabels[i]);
+                        filteredData1 = filteredIndices.map(i => originalData1[i]);
+                        filteredData2 = filteredIndices.map(i => originalData2[i]);
+                        filteredData3 = filteredIndices.map(i => originalData3[i]);
+                    } else if (currentFilter !== 'all') {
+                        let cutoffDate;
+                        switch(currentFilter) {
+                            case '30days':
+                                cutoffDate = new Date(maxDate - 30 * 24 * 60 * 60 * 1000);
+                                break;
+                            case '7days':
+                                cutoffDate = new Date(maxDate - 7 * 24 * 60 * 60 * 1000);
+                                break;
+                            case '24hours':
+                                cutoffDate = new Date(maxDate - 24 * 60 * 60 * 1000);
+                                break;
+                        }
+                        const filteredIndices = dates.map((date, index) => 
+                            date >= cutoffDate ? index : -1
+                        ).filter(index => index !== -1);
+
+                        filteredLabels = filteredIndices.map(i => originalLabels[i]);
+                        filteredData1 = filteredIndices.map(i => originalData1[i]);
+                        filteredData2 = filteredIndices.map(i => originalData2[i]);
+                        filteredData3 = filteredIndices.map(i => originalData3[i]);
+                    }
+
+                    chart.data.labels = filteredLabels;
+                    chart.data.datasets[0].data = filteredData1;
+                    chart.data.datasets[1].data = filteredData2;
+                    chart.data.datasets[2].data = filteredData3;
+                    chart.update('none');
+                }
+
+                // Initial render
+                currentFilter = 'all';
+                updateChart();
+            } catch (error) {
+                document.getElementById('error').innerText = 'Error rendering chart: ' + error.message;
+                console.error(error);
+            }
         }
     </script>
 </body>
