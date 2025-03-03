@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -61,7 +62,7 @@
         <button onclick="filterData('all')">All Data</button>
         <button onclick="filterData('30days')">Last 30 Days</button>
         <button onclick="filterData('7days')">Last 7 Days</button>
-        <button onclick="filterData('24hours')">Last 24 Hours</button>
+        <button onclick="filterData('48hours')">Last 48 Hours</button>
     </div>
     <div class="date-range">
         <span>Date From:</span> <input type="date" id="dateFrom" onchange="updateDateRange()">
@@ -108,7 +109,6 @@
                             pointRadius: 0,
                             fill: false,
                             tension: 0.1,
-                            
                         },
                         { 
                             label: 'Forecast1', 
@@ -118,7 +118,6 @@
                             pointRadius: 0,
                             fill: false,
                             tension: 0.1,
-                            
                         },
                         { 
                             label: 'Forecast2', 
@@ -128,13 +127,12 @@
                             pointRadius: 0,
                             fill: false,
                             tension: 0.1,
-                            
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, // Allow chart to stretch
+                    maintainAspectRatio: false,
                     animation: false,
                     interaction: {
                         mode: 'nearest',
@@ -156,6 +154,20 @@
                                     }
                                     label += context.parsed.y;
                                     return label;
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                endLine: {
+                                    type: 'line',
+                                    xMin: maxDate,
+                                    xMax: maxDate,
+                                    borderColor: '#808080',
+                                    borderWidth: 2,
+                                    label: {
+                                        enabled: false
+                                    }
                                 }
                             }
                         }
@@ -188,6 +200,29 @@
                 currentFilter = period;
                 customDateFrom = null;
                 customDateTo = null;
+                
+                // Update Date From input based on filter period
+                const dateFromInput = document.getElementById('dateFrom');
+                let newDateFrom;
+                switch(period) {
+                    case '30days':
+                        newDateFrom = new Date(maxDate - 30 * 24 * 60 * 60 * 1000);
+                        break;
+                    case '7days':
+                        newDateFrom = new Date(maxDate - 7 * 24 * 60 * 60 * 1000);
+                        break;
+                    case '48hours':
+                        newDateFrom = new Date(maxDate - 48 * 60 * 60 * 1000);
+                        break;
+                    case 'all':
+                    default:
+                        newDateFrom = minDate;
+                        break;
+                }
+                dateFromInput.value = newDateFrom.toISOString().split('T')[0];
+                // Ensure Date To remains at maxDate
+                document.getElementById('dateTo').value = maxDate.toISOString().split('T')[0];
+                
                 updateChart();
             }
 
@@ -227,8 +262,8 @@
                         case '7days':
                             cutoffDate = new Date(maxDate - 7 * 24 * 60 * 60 * 1000);
                             break;
-                        case '24hours':
-                            cutoffDate = new Date(maxDate - 24 * 60 * 60 * 1000);
+                        case '48hours':
+                            cutoffDate = new Date(maxDate - 48 * 60 * 60 * 1000);
                             break;
                     }
                     const filteredIndices = dates.map((date, index) => 
