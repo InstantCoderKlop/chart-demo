@@ -142,6 +142,10 @@
                         tooltip: {
                             enabled: true,
                             position: 'nearest',
+                            yAlign: 'top',          // Align tooltip above the point
+                            xAlign: 'center',       // Center horizontally
+                            caretPadding: 16,       // Increased by 60% from 10 to 13
+                            backgroundColor: 'rgba(0, 0, 0, 0.56)', // 20% more transparent (default is ~0.7)
                             callbacks: {
                                 title: function(tooltipItems) {
                                     return moment(tooltipItems[0].label).format('MMM D, YYYY HH:mm');
@@ -229,7 +233,7 @@
                 
                 if (fromInput && toInput) {
                     customDateFrom = new Date(fromInput + 'T00:00:00');
-                    customDateTo = new Date(toInput + 'T23:59:59');
+                    customDateTo = new Date(toInput + 'T23:00:00');
                     currentFilter = 'custom';
                     updateChart();
                 }
