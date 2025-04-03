@@ -98,6 +98,86 @@
         document.getElementById('dateFrom').value = new Date(minDate).toISOString().split('T')[0];
         document.getElementById('dateTo').value = new Date(maxDate).toISOString().split('T')[0];
 
+        // Custom plugin for night time background (21:00-05:00)
+        const nightTimePlugin = {
+            id: 'nightTimeBackground',
+            beforeDraw: (chart) => {
+                const ctx = chart.ctx;
+                const chartArea = chart.chartArea;
+                const xAxis = chart.scales.x;
+                
+                if (!chartArea || !xAxis) return;
+                
+                // Function to check if a time is within night hours (21:00-05:00)
+                const isNightTime = (date) => {
+                    const hour = date.getHours();
+                    return (hour >= 21 || hour < 5);
+                };
+                
+                // Get visible data points
+                const visibleData = [];
+                for (let i = 0; i < chart.data.labels.length; i++) {
+                    visibleData.push({
+                        date: new Date(chart.data.labels[i]),
+                        x: xAxis.getPixelForValue(new Date(chart.data.labels[i]))
+                    });
+                }
+                
+                // Draw background for night time periods
+                if (visibleData.length > 1) {
+                    let isInNightZone = false;
+                    let startX = null;
+                    
+                    for (let i = 0; i < visibleData.length; i++) {
+                        const currentIsNight = isNightTime(visibleData[i].date);
+                        
+                        // Start of night zone
+                        if (currentIsNight && !isInNightZone) {
+                            isInNightZone = true;
+                            startX = visibleData[i].x;
+                        }
+                        
+                        // End of night zone or end of data
+                        if ((!currentIsNight && isInNightZone) || (currentIsNight && isInNightZone && i === visibleData.length - 1)) {
+                            isInNightZone = false;
+                            const endX = i === visibleData.length - 1 ? chartArea.right : visibleData[i].x;
+                            
+                            // Draw the zone
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Transparent black
+                            ctx.fillRect(startX, chartArea.top, endX - startX, chartArea.bottom - chartArea.top);
+                        }
+                    }
+                }
+            }
+        };
+        
+        // Custom plugin for negative price background - colors the ENTIRE area below zero
+        const negativeAreaPlugin = {
+            id: 'negativeAreaBackground',
+            beforeDraw: (chart) => {
+                const ctx = chart.ctx;
+                const chartArea = chart.chartArea;
+                const yAxis = chart.scales.y;
+                
+                if (!chartArea || !yAxis) return;
+                
+                // Get zero line position
+                const zeroLineY = yAxis.getPixelForValue(0);
+                
+                // Only proceed if the zero line is visible in the chart area
+                if (zeroLineY >= chartArea.top && zeroLineY <= chartArea.bottom) {
+                    // Fill the entire area below zero with transparent red
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)'; // Transparent red
+                    ctx.fillRect(
+                        chartArea.left,                      // Left edge of chart area
+                        zeroLineY,                           // Y-position of zero line
+                        chartArea.right - chartArea.left,    // Width of rectangle (full chart width)
+                        chartArea.bottom - zeroLineY         // Height from zero line to bottom
+                    );
+                }
+            }
+        };
+
         try {
             const ctx = document.getElementById('myChart').getContext('2d');
             const chart = new Chart(ctx, {
@@ -201,7 +281,8 @@
                             }
                         }
                     }
-                }
+                },
+                plugins: [nightTimePlugin, negativeAreaPlugin]
             });
 
             function filterData(period) {
